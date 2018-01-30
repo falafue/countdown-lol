@@ -4,6 +4,7 @@ import random
 import csv
 import Image
 import ImageDraw
+import RPi.GPIO as GPIO
 import time
 from rgbmatrix import Adafruit_RGBmatrix
 
@@ -12,11 +13,15 @@ matrix = Adafruit_RGBmatrix(32, 4)
 
 matrix.SetWriteCycles(4)
 
-countdown =  15
+countdown = 15
 steps = 30
-size=32
+size = 32
+buttonpin=18
 
 digits=len(`countdown`)
+
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(buttonpin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 class daliDigits:
   def __init__(self,steps):
@@ -38,20 +43,22 @@ class daliDigits:
           if numstr[lower] != "9":
             zero=1
         if zero==0:
-          #if numstr[pos] == "0":
-          #  newnum=str(1)
-          #else:
-          #  newnum=str(int(numstr[pos])-1)
+          # self.img[int(numstr[pos])][step].load()
+          # image.paste(self.img[int(numstr[pos])][step],(pos*size, -1, (pos+1)*size,size-1))
           numimg = Image.open("pgm/"+numstr[pos]+"/dali_digits_"+numstr[pos]+"-"+stepstr+".pbm")
           numimg.load()
           image.paste(numimg,(pos*size, -1, (pos+1)*size,size-1))
           print "0{0:1s}-{1:02d}".format(numstr[pos],step),
         else:
+          # self.img[int(numstr[pos])][0].load()
+          # image.paste(self.img[int(numstr[pos])][0],(pos*size, -1, (pos+1)*size,size-1))
           numimg = Image.open("pgm/"+numstr[pos]+"/dali_digits_"+numstr[pos]+"-00.pbm")
           numimg.load()
           image.paste(numimg,(pos*size, -1, (pos+1)*size,size-1))
           print "0{0:1s}-{1:02d}".format(numstr[pos],0),
       else:
+        # self.img[int(numstr[digits-1])][step].load()
+        # image.paste(self.img[int(numstr[digits-1])][step],(pos*size, -1, (pos+1)*size,size-1))
         numimg = Image.open("pgm/"+numstr[digits-1]+"/dali_digits_"+numstr[digits-1]+"-"+stepstr+".pbm")
         numimg.load()
         image.paste(numimg,(pos*size, -1, (pos+1)*size,size-1))
@@ -91,7 +98,8 @@ class CountDown:
       matrix.SetImage(image.im.id, n, 1)
       time.sleep(0.025)
       matrix.Clear()
-    
+    time.sleep(0.25)
+    matrix.SetImage(image.im.id, 2*32-image.size[0]/2, 1)
 
 with open('liste.csv') as csvfile:
     reader = csv.DictReader(csvfile)
@@ -103,4 +111,19 @@ while len(myList) >0:
   element=random.choice(myList)
   counter.shownum(myList.index(element),element["image"])
   myList.remove(element)
+  wait_button()
   counter.countdown()
+  wait_button()
+
+def wait_button()
+  prev_input = 0
+  while True:
+    #take a reading
+    input = GPIO.input(buttonpin)
+    #if the last reading was low and this one high, print
+    if ((not prev_input) and input):
+      break;
+    #update previous input
+    prev_input = input
+    #slight pause to debounce
+    time.sleep(0.05)
