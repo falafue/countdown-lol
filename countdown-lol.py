@@ -10,6 +10,8 @@ from rgbmatrix import Adafruit_RGBmatrix
 # Rows and chain length are both required parameters:
 matrix = Adafruit_RGBmatrix(32, 4)
 
+matrix.SetWriteCycles(4)
+
 countdown =  15
 steps = 30
 size=32
